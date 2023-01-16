@@ -1,5 +1,7 @@
 # WebLN Sandbox
 
+[DEMO](https://rolznz.github.io/webln-sandbox/)
+
 ## Using the Sandbox (Regtest)
 
 - Install Alby from source. See [Setup](https://github.com/getAlby/lightning-browser-extension/blob/master/doc/SETUP.md))
