@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "classnames": "^2.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "webln": "^0.3.2"
+    "webln": "^0.3.2",
+    "zustand": "^4.3.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.26",
