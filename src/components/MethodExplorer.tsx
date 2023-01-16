@@ -67,6 +67,7 @@ export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
               }}
             >
               {method}
+              {!getDefaultArgs(method) && <span className="text-error">!</span>}
               {currentMethod === method && isLoading && (
                 <>
                   &nbsp;
@@ -112,26 +113,11 @@ export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
 }
 
 function getArgs(method: WebLNRequestMethod) {
-  let defaultArgs;
-
-  switch (method) {
-    case "queryroutes":
-      defaultArgs = {
-        amt: 500,
-        pub_key:
-          "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
-      };
-      break;
-    case "connectpeer":
-      defaultArgs = {
-        addr: {
-          pubkey:
-            "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
-          host: "localhost:8082",
-        },
-      };
-      break;
+  let defaultArgs = getDefaultArgs(method);
+  if (JSON.stringify(defaultArgs) === "{}") {
+    defaultArgs = undefined;
   }
+
   let args;
   if (defaultArgs) {
     args = window.prompt("Args", JSON.stringify(defaultArgs)) || "";
@@ -141,4 +127,34 @@ function getArgs(method: WebLNRequestMethod) {
     args: args ? JSON.parse(args) : undefined,
     cancelled: defaultArgs && !args,
   };
+}
+
+function getDefaultArgs(method: WebLNRequestMethod) {
+  switch (method) {
+    case "getinfo":
+    case "getnetworkinfo":
+    case "channelbalance":
+    case "getnodeinfo":
+    case "listchannels":
+    case "walletbalance":
+    case "listpeers":
+    case "listinvoices":
+    case "gettransactions":
+    case "listpayments":
+      return {};
+    case "queryroutes":
+      return {
+        amt: 500,
+        pub_key:
+          "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
+      };
+    case "connectpeer":
+      return {
+        addr: {
+          pubkey:
+            "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
+          host: "localhost:8082",
+        },
+      };
+  }
 }
