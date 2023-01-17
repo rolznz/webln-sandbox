@@ -1,37 +1,4 @@
-import { GetInfoResponse, WebLNProvider } from "webln";
-
-export type WebLNNetwork = "lightning";
-
-export type WebLNRequestMethod =
-  | "getinfo"
-  | "listchannels"
-  | "listinvoices"
-  | "channelbalance"
-  | "walletbalance"
-  | "openchannel"
-  | "connectpeer"
-  | "disconnectpeer"
-  | "estimatefee"
-  | "getchaninfo"
-  | "getnetworkinfo"
-  | "getnodeinfo"
-  | "gettransactions"
-  | "listpayments"
-  | "listpeers"
-  | "lookupinvoice"
-  | "queryroutes"
-  | "verifymessage"
-  | "sendtoroute"
-  | "decodepayreq"
-  | "routermc"
-  | "addinvoice";
-
-// TODO: create a PR for the webln repo
-export type ExtendedGetInfoResponse = GetInfoResponse & {
-  version: string;
-  supports: WebLNNetwork[];
-  methods: WebLNRequestMethod[];
-};
+import { RequestMethod, WebLNProvider } from "@webbtc/webln-types";
 
 export type ListInvoicesResponse = {
   invoices: {
@@ -92,6 +59,5 @@ export type ListInvoicesRequestFunc = (
 ) => ListInvoicesResponse;
 
 export type ExtendedWebLNProvider = WebLNProvider & {
-  request: ListInvoicesRequestFunc &
-    ((method: WebLNRequestMethod, args?: unknown) => unknown);
+  request: ListInvoicesRequestFunc & WebLNProvider["request"];
 };

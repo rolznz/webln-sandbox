@@ -1,16 +1,12 @@
 import React from "react";
-import { requestProvider } from "webln";
-import { ExtendedGetInfoResponse, ExtendedWebLNProvider } from "../types/WebLN";
 
 import { create } from "zustand";
 import classnames from "classnames";
 import { Loading } from "./Loading";
-import { NodeStats } from "./NodeStats";
-import { MethodExplorer } from "./MethodExplorer";
+import { GetInfoResponse } from "@webbtc/webln-types";
 
 type Account = {
-  info: ExtendedGetInfoResponse;
-  webln: ExtendedWebLNProvider;
+  info: GetInfoResponse;
 };
 
 type AccountsStore = {
@@ -76,9 +72,12 @@ export function Accounts() {
 
 export async function loadAccountInfo() {
   try {
+    if (!window.webln) {
+      throw new Error("WebLN does not exist");
+    }
     console.log("Loading webln...");
-    const webln = (await requestProvider()) as ExtendedWebLNProvider;
-    const info = (await webln.getInfo()) as ExtendedGetInfoResponse;
+    await window.webln.enable();
+    const info: GetInfoResponse = await window.webln.getInfo();
     if (
       !useAccountsStore
         .getState()
@@ -88,7 +87,6 @@ export async function loadAccountInfo() {
     ) {
       useAccountsStore.getState().addAccount({
         info,
-        webln,
       });
     }
 

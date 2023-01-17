@@ -1,14 +1,6 @@
 import "./App.css";
 
-import { GetInfoResponse, requestProvider, WebLNProvider } from "webln";
-import React from "react";
-import { Loading } from "./components/Loading";
 import { Accounts, useAccountsStore } from "./components/Accounts";
-import {
-  ExtendedWebLNProvider,
-  ExtendedGetInfoResponse,
-  WebLNRequestMethod,
-} from "./types/WebLN";
 import { MethodExplorer } from "./components/MethodExplorer";
 import { NodeStats } from "./components/NodeStats";
 import { PodcastReader } from "./components/PodcastReader";
@@ -29,11 +21,8 @@ function App() {
       {selectedAccount && (
         <>
           <NodeStats nodeInfo={selectedAccount.info} />
-          <MethodExplorer
-            nodeInfo={selectedAccount.info}
-            webln={selectedAccount.webln}
-          />
-          <PodcastReader webln={selectedAccount.webln} />
+          <MethodExplorer nodeInfo={selectedAccount.info} />
+          <PodcastReader />
         </>
       )}
     </div>

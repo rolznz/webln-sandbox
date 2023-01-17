@@ -1,18 +1,13 @@
+import { GetInfoResponse, RequestMethod } from "@webbtc/webln-types";
 import React from "react";
-import {
-  ExtendedGetInfoResponse,
-  ExtendedWebLNProvider,
-  WebLNRequestMethod,
-} from "../types/WebLN";
 import { loadAccountInfo } from "./Accounts";
 import { Loading } from "./Loading";
 
 type MethodExplorerProps = {
-  nodeInfo: ExtendedGetInfoResponse;
-  webln: ExtendedWebLNProvider;
+  nodeInfo: GetInfoResponse;
 };
 
-export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
+export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
   const [isLoading, setLoading] = React.useState(false);
   const [requestOutput, setRequestOutput] = React.useState<unknown | undefined>(
     undefined
@@ -21,7 +16,7 @@ export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
     undefined
   );
   const [currentMethod, setCurrentMethod] = React.useState<
-    WebLNRequestMethod | undefined
+    RequestMethod | undefined
   >(undefined);
 
   return (
@@ -47,9 +42,12 @@ export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
                     setRequestError(undefined);
                     setLoading(true);
                     try {
+                      if (!window.webln) {
+                        throw new Error("WebLN is not available");
+                      }
                       const { args, cancelled } = getArgs(method);
                       if (!cancelled) {
-                        const result = await webln.request(method, args);
+                        const result = await window.webln.request(method, args);
 
                         console.log(method, result);
                         setRequestOutput(result);
@@ -112,7 +110,7 @@ export function MethodExplorer({ nodeInfo, webln }: MethodExplorerProps) {
   );
 }
 
-function getArgs(method: WebLNRequestMethod) {
+function getArgs(method: RequestMethod) {
   let defaultArgs = getDefaultArgs(method);
   if (JSON.stringify(defaultArgs) === "{}") {
     defaultArgs = undefined;
@@ -129,7 +127,7 @@ function getArgs(method: WebLNRequestMethod) {
   };
 }
 
-function getDefaultArgs(method: WebLNRequestMethod) {
+function getDefaultArgs(method: RequestMethod) {
   switch (method) {
     case "getinfo":
     case "getnetworkinfo":

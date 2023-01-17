@@ -1,7 +1,7 @@
-import { ExtendedGetInfoResponse } from "../types/WebLN";
+import { GetInfoResponse } from "@webbtc/webln-types";
 
 type NodeStatsProps = {
-  nodeInfo: ExtendedGetInfoResponse;
+  nodeInfo: GetInfoResponse;
 };
 
 export function NodeStats({ nodeInfo }: NodeStatsProps) {

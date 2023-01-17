@@ -2,24 +2,25 @@ import React from "react";
 import { ExtendedWebLNProvider } from "../types/WebLN";
 import { Loading } from "./Loading";
 
-type PodcastReaderProps = {
-  webln: ExtendedWebLNProvider;
-};
+type PodcastReaderProps = {};
 
-export function PodcastReader({ webln }: PodcastReaderProps) {
+export function PodcastReader() {
   const [isLoading, setLoading] = React.useState(false);
   const [boosts, setBoosts] = React.useState<unknown | undefined>(undefined);
   const readBoosts = React.useCallback(() => {
-    if (!webln) {
-      throw new Error("webln not loaded");
-    }
     (async () => {
       setLoading(true);
       try {
-        const response = await webln.request("listinvoices", {
-          reversed: true,
-          num_max_invoices: 1000,
-        });
+        if (!window.webln) {
+          throw new Error("webln not loaded");
+        }
+        const response = await (window.webln as ExtendedWebLNProvider).request(
+          "listinvoices",
+          {
+            reversed: true,
+            num_max_invoices: 1000,
+          }
+        );
         const boosts: {}[] = [];
         for (const invoice of response.invoices) {
           for (const htlc of invoice.htlcs) {
@@ -36,7 +37,7 @@ export function PodcastReader({ webln }: PodcastReaderProps) {
       }
       setLoading(false);
     })();
-  }, [webln]);
+  }, []);
 
   return (
     <>
