@@ -41,6 +41,9 @@ export function PodcastReader() {
 
   return (
     <>
+      <div className="divider mt-8">
+        <h1 className="text-lg font-mono">V4V</h1>
+      </div>
       {!boosts ? (
         isLoading ? (
           <Loading />
