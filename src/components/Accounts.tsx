@@ -38,6 +38,9 @@ export function Accounts() {
 
   return (
     <>
+      <div className="divider mt-8">
+        <h1 className="text-lg font-mono">webln.getInfo()</h1>
+      </div>
       <div className="flex justify-center items-center gap-2">
         Accounts
         <div className="btn-group">
@@ -71,10 +74,11 @@ export function Accounts() {
 }
 
 export async function loadAccountInfo() {
+  if (!window.webln) {
+    alert("Please install the Alby extension");
+    return;
+  }
   try {
-    if (!window.webln) {
-      throw new Error("WebLN does not exist");
-    }
     console.log("Loading webln...");
     await window.webln.enable();
     const info: GetInfoResponse = await window.webln.getInfo();
@@ -93,6 +97,6 @@ export async function loadAccountInfo() {
     console.log("Webln loaded!");
   } catch (err) {
     console.error(err);
-    alert("Please install the Alby extension.");
+    alert((err as Error).message);
   }
 }

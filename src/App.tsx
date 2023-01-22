@@ -15,12 +15,23 @@ function App() {
         className="flex"
         href="https://www.webln.guide/building-lightning-apps/getting-started"
       >
-        <span className="badge badge-secondary badge-sm">docs</span>
+        <span className="badge badge-secondary badge-sm">WebLN guide</span>
       </a>
       <Accounts />
       {selectedAccount && (
         <>
           <NodeStats nodeInfo={selectedAccount.info} />
+          <div className="divider mt-8">
+            <h1 className="text-lg font-mono">WebLN experiments</h1>
+          </div>
+          <p></p>
+          <p>
+            Try the experiments at{" "}
+            <a href="https://webln.twentyuno.net/" target="_blank">
+              https://webln.twentyuno.net/
+            </a>
+          </p>
+
           <MethodExplorer nodeInfo={selectedAccount.info} />
           <PodcastReader />
         </>

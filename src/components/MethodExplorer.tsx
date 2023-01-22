@@ -1,5 +1,7 @@
 import { GetInfoResponse, RequestMethod } from "@webbtc/webln-types";
+import classNames from "classnames";
 import React from "react";
+import { DefaultValues, Path, useForm, UseFormRegister } from "react-hook-form";
 import { loadAccountInfo } from "./Accounts";
 import { Loading } from "./Loading";
 
@@ -9,6 +11,7 @@ type MethodExplorerProps = {
 
 export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
   const [isLoading, setLoading] = React.useState(false);
+  const [isModalOpen, setModalOpen] = React.useState(false);
   const [executedCode, setExecutedCode] = React.useState<string | undefined>(
     undefined
   );
@@ -21,12 +24,31 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
   const [currentMethod, setCurrentMethod] = React.useState<
     RequestMethod | undefined
   >(undefined);
+  const [modalResolve, setModalResolve] = React.useState<
+    ((value: unknown) => void) | undefined
+  >(undefined);
+  const [cancelInputArguments, setCancelInputArguments] = React.useState<
+    (() => void) | undefined
+  >(undefined);
 
   return (
     <>
+      {currentMethod && (
+        <ArgumentsFormModal
+          key={currentMethod}
+          currentMethod={currentMethod}
+          isModalOpen={isModalOpen}
+          modalResolve={modalResolve}
+          cancelInputArguments={cancelInputArguments}
+        />
+      )}
       <div className="divider mt-8">
         <h1 className="text-lg font-mono">webln.request()</h1>
       </div>
+      <p>
+        Leverage the full potential of your connected node. Currently only LND
+        nodes are supported.
+      </p>
       <div className="container flex gap-4">
         <div className="flex flex-col items-center gap-1">
           <h2 className="font-mono">Supported methods</h2>
@@ -44,37 +66,50 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
                 disabled={isLoading}
                 onClick={() => {
                   (async () => {
-                    (async () => {
-                      setCurrentMethod(method);
-                      setRequestError(undefined);
-                      setLoading(true);
-                      try {
-                        if (!window.webln) {
-                          throw new Error("WebLN is not available");
-                        }
-                        const { args, cancelled } = getArgs(method);
-                        if (!cancelled) {
-                          const result = await window.webln.request(
-                            method,
-                            args
-                          );
-
-                          console.log(method, result);
-                          const executedCode = `await window.webln.enable();\nawait window.webln.request("${method}"${
-                            args ? ", " + JSON.stringify(args) : ""
-                          });`;
-                          setExecutedCode(executedCode);
-                          setRequestOutput(result);
-                          loadAccountInfo();
-                        } else {
-                          throw new Error("Cancelled");
-                        }
-                      } catch (error) {
-                        console.error("Failed to request", method, error);
-                        setRequestError(error);
+                    setCurrentMethod(method);
+                    setRequestError(undefined);
+                    setLoading(true);
+                    try {
+                      if (!window.webln) {
+                        throw new Error("WebLN is not available");
                       }
-                      setLoading(false);
-                    })();
+                      async function getArgsFromModal() {
+                        let args = undefined;
+                        try {
+                          args = await new Promise((resolve, reject) => {
+                            setModalResolve(() => resolve);
+                            setCancelInputArguments(() => reject);
+                          });
+                        } catch (error) {
+                          console.error(error);
+                        }
+                        setModalOpen(false);
+                        return args;
+                      }
+                      const { args, cancelled } = await getArgs(
+                        method,
+                        setModalOpen,
+                        getArgsFromModal
+                      );
+                      if (!cancelled) {
+                        const executedCode = `await window.webln.enable();\nawait window.webln.request("${method}"${
+                          args ? ", " + JSON.stringify(args) : ""
+                        });`;
+                        setExecutedCode(executedCode);
+                        setRequestOutput(undefined);
+                        const result = await window.webln.request(method, args);
+
+                        console.log(method, result);
+                        setRequestOutput(result);
+                        loadAccountInfo();
+                      } else {
+                        throw new Error("Cancelled");
+                      }
+                    } catch (error) {
+                      console.error("Failed to request", method, error);
+                      setRequestError(error);
+                    }
+                    setLoading(false);
                   })();
                 }}
               >
@@ -101,11 +136,13 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
               target="_blank"
               href="https://lightning.engineering/api-docs/api/lnd/rest-endpoints"
             >
-              <span className="badge badge-secondary badge-sm">LND</span>
+              <span className="badge badge-secondary badge-sm">
+                LND REST docs
+              </span>
             </a>
-            <a target="_blank" href="https://lightning.readthedocs.io/">
+            {/*<a target="_blank" href="https://lightning.readthedocs.io/">
               <span className="badge badge-secondary badge-sm">CLN</span>
-            </a>
+                </a>*/}
           </div>
           <div className="mockup-code flex-1">
             {executedCode && (
@@ -158,49 +195,142 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
   );
 }
 
-function getArgs(method: RequestMethod) {
+async function getArgs(
+  method: RequestMethod,
+  setModalOpen: (isOpen: boolean) => void,
+  getArgsFromModal: () => Promise<unknown>
+) {
   let defaultArgs = getDefaultArgs(method);
-  if (JSON.stringify(defaultArgs) === "{}") {
+  if (Object.keys(defaultArgs || {}).length === 0) {
     defaultArgs = undefined;
   }
 
   let args;
   if (defaultArgs) {
-    args = window.prompt("Args", JSON.stringify(defaultArgs)) || "";
+    setModalOpen(true);
+    args = await getArgsFromModal();
   }
 
   return {
-    args: args ? JSON.parse(args) : undefined,
+    args,
     cancelled: defaultArgs && !args,
   };
 }
 
 function getDefaultArgs(method: RequestMethod) {
-  switch (method) {
-    case "getinfo":
-    case "getnetworkinfo":
-    case "channelbalance":
-    case "getnodeinfo":
-    case "listchannels":
-    case "walletbalance":
-    case "listpeers":
-    case "listinvoices":
-    case "gettransactions":
-    case "listpayments":
-      return {};
-    case "queryroutes":
-      return {
-        amt: 500,
-        pub_key:
-          "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
-      };
-    case "connectpeer":
-      return {
-        addr: {
-          pubkey:
+  return (() => {
+    switch (method) {
+      case "getinfo":
+      case "getnetworkinfo":
+      case "channelbalance":
+      case "getnodeinfo":
+      case "listchannels":
+      case "walletbalance":
+      case "listpeers":
+      case "listinvoices":
+      case "gettransactions":
+      case "listpayments":
+        return {};
+      case "queryroutes":
+        return {
+          amt: 500,
+          pub_key:
             "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
-          host: "localhost:8082",
-        },
-      };
-  }
+        };
+      case "connectpeer":
+        return {
+          addr: {
+            pubkey:
+              "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
+            host: "alice:8080",
+          },
+        };
+      case "disconnectpeer":
+        return {
+          pub_key:
+            "03f761d4db6fd17947694d795625310631b9af1df589f1e2f844b74c13caeecab4",
+        };
+    }
+  })();
+}
+
+type ArgumentsFormModalProps = {
+  isModalOpen: boolean;
+  currentMethod: RequestMethod;
+  modalResolve: ((args: unknown) => void) | undefined;
+  cancelInputArguments: (() => void) | undefined;
+};
+
+function ArgumentsFormModal({
+  isModalOpen,
+  currentMethod,
+  modalResolve,
+  cancelInputArguments,
+}: ArgumentsFormModalProps) {
+  const defaultValues = React.useMemo(
+    () => getDefaultArgs(currentMethod)!,
+    [currentMethod]
+  );
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<typeof defaultValues>({
+    defaultValues,
+  });
+
+  const onSubmit = (data: unknown) => {
+    console.log(data);
+    modalResolve?.(data);
+  };
+
+  return (
+    <div className={classNames("modal", { "modal-open": isModalOpen })}>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg">Arguments for {currentMethod}</h3>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+          {generateFormInputs<typeof defaultValues>(
+            defaultValues,
+            "",
+            register
+          )}
+          {/* errors will return when field validation fails  */}
+          {errors &&
+            Object.values(errors).map((error, index) => (
+              <span key={index}>{JSON.stringify(error)}</span>
+            ))}
+
+          <input className="btn" type="submit" />
+          <button className="btn btn-secondary" onClick={cancelInputArguments}>
+            cancel
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function generateFormInputs<T extends Object>(
+  obj: Object,
+  key: string,
+  register: UseFormRegister<T>
+) {
+  return Object.entries(obj).map((entry) => (
+    <div key={entry[0]} className="flex flex-col gap-1">
+      <span>{key + entry[0]}</span>
+      {typeof entry[1] === "object" ? (
+        generateFormInputs(entry[1], key + entry[0] + ".", register)
+      ) : (
+        <>
+          <input
+            defaultValue={entry[1]}
+            required
+            {...register((key + entry[0]) as Path<T>)}
+            className="input input-bordered"
+          />
+        </>
+      )}
+    </div>
+  ));
 }
