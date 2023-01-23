@@ -244,6 +244,8 @@ function getDefaultArgs(method: RequestMethod) {
               "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
             host: "alice:8080",
           },
+          perm: true,
+          timeout: 10,
         };
       case "disconnectpeer":
         return {
@@ -281,7 +283,7 @@ function ArgumentsFormModal({
 
   const onSubmit = (data: unknown) => {
     console.log(data);
-    modalResolve?.(data);
+    modalResolve?.(fixTypes(data, defaultValues));
   };
 
   return (
@@ -311,7 +313,7 @@ function ArgumentsFormModal({
   );
 }
 
-export function generateFormInputs<T extends Object>(
+function generateFormInputs<T extends Object>(
   obj: Object,
   key: string,
   register: UseFormRegister<T>
@@ -333,4 +335,19 @@ export function generateFormInputs<T extends Object>(
       )}
     </div>
   ));
+}
+
+// all the inputs are strings - convert them back to the correct types by checking the default values
+function fixTypes(obj: any, defaultValues: any) {
+  Object.entries(obj).forEach((entry) => {
+    if (typeof defaultValues[entry[0]] === "object") {
+      obj[entry[0]] = fixTypes(entry[1], defaultValues[entry[0]]);
+    } else if (typeof defaultValues[entry[0]] === "number") {
+      obj[entry[0]] = parseInt(entry[1] as string);
+    } else if (typeof defaultValues[entry[0]] === "boolean") {
+      obj[entry[0]] = entry[1] === "true";
+    }
+  });
+  console.log("Fix types", obj);
+  return obj;
 }
