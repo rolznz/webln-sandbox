@@ -22,6 +22,115 @@ function App() {
         <>
           <NodeStats nodeInfo={selectedAccount.info} />
           <div className="divider mt-8">
+            <h1 className="text-lg font-mono">webln.lnurl()</h1>
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              if (window.webln) {
+                window.webln.lnurl("rolznz@getalby.com");
+              }
+            }}
+          >
+            Send me a tip
+          </button>
+          <p>
+            lnurl can do{" "}
+            <a
+              className="link"
+              href="https://github.com/lnurl/luds"
+              target="_blank"
+            >
+              much more
+            </a>
+            .{" "}
+          </p>
+          <div className="flex w-full">
+            <div className="flex-1 flex flex-col items-center">
+              <div className="divider mt-8">
+                <h1 className="text-lg font-mono">webln.makeInvoice()</h1>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  (async () => {
+                    if (window.webln) {
+                      const result = await window.webln.makeInvoice({
+                        amount: 21,
+                      });
+                      window.prompt("Copy the invoice", result.paymentRequest);
+                    }
+                  })();
+                }}
+              >
+                Make Invoice
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col items-center">
+              <div className="divider mt-8">
+                <h1 className="text-lg font-mono">webln.sendPayment()</h1>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  (async () => {
+                    if (window.webln) {
+                      const invoice = await window.prompt("paste an invoice");
+                      if (invoice) {
+                        const result = await window.webln.sendPayment(invoice);
+                        window.alert("preimage: " + result.preimage);
+                      }
+                    }
+                  })();
+                }}
+              >
+                Send Payment
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col items-center">
+              <div className="divider mt-8">
+                <h1 className="text-lg font-mono">webln.signMessage()</h1>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  (async () => {
+                    if (window.webln) {
+                      const message = window.prompt(
+                        "Type a message",
+                        "my node will sign this message"
+                      );
+                      if (message) {
+                        const result = await window.webln.signMessage(message);
+                        window.prompt(
+                          "Signed message signature",
+                          result.signature
+                        );
+                      }
+                    }
+                  })();
+                }}
+              >
+                Sign Message
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col items-center">
+              <div className="divider mt-8">
+                <h1 className="text-lg font-mono">webln.verifyMessage()</h1>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  alert(
+                    "This function is not supported. It seems like there is no real life usecase?"
+                  );
+                }}
+              >
+                Verify Message
+              </button>
+            </div>
+          </div>
+          <div className="divider mt-8">
             <h1 className="text-lg font-mono">WebLN experiments</h1>
           </div>
           <p></p>
