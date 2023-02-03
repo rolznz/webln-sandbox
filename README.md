@@ -14,6 +14,7 @@
     - Enable insecure localhost if you have certificate issues chrome://flags/#allow-insecure-localhost
   - Your new Wallet should have 0 balance (currently Alice only has onchain bitcoin)
   - Add the Bob Lightning node as another account to your Alby wallet.
+  - Note: connectpeer is not needed locally (Polar does this automatically)
 
 ## Development
 

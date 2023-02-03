@@ -209,12 +209,30 @@ async function getArgs(
   if (defaultArgs) {
     setModalOpen(true);
     args = await getArgsFromModal();
+    if (args) {
+      if (method === "openchannel") {
+        const typedArgs = args as typeof defaultArgs;
+        typedArgs.node_pubkey = hexToBase64(typedArgs.node_pubkey!);
+      }
+    }
   }
 
   return {
     args,
     cancelled: defaultArgs && !args,
   };
+}
+
+//https://stackoverflow.com/a/41797377/4562693
+function hexToBase64(hexstring: string) {
+  return btoa(
+    hexstring
+      .match(/\w{2}/g)!
+      .map(function (a) {
+        return String.fromCharCode(parseInt(a, 16));
+      })
+      .join("")
+  );
 }
 
 function getDefaultArgs(method: RequestMethod) {
@@ -251,6 +269,13 @@ function getDefaultArgs(method: RequestMethod) {
         return {
           pub_key:
             "03f761d4db6fd17947694d795625310631b9af1df589f1e2f844b74c13caeecab4",
+        };
+      case "openchannel":
+        return {
+          node_pubkey:
+            "028194cc50c8824b4ca473a5b1296c440a82fb8837a3945b2f55a903d4c380f597",
+          local_funding_amount: 100000, // in sats
+          push_sat: 0,
         };
     }
   })();
