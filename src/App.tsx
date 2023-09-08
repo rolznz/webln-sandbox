@@ -27,7 +27,7 @@ function App() {
           <button
             className="btn btn-primary"
             onClick={() => {
-              if (window.webln) {
+              if (window.webln?.lnurl) {
                 window.webln.lnurl("rolznz@getalby.com");
               }
             }}
@@ -95,7 +95,7 @@ function App() {
                 className="btn btn-primary"
                 onClick={() => {
                   (async () => {
-                    if (window.webln) {
+                    if (window.webln?.signMessage) {
                       const message = window.prompt(
                         "Type a message",
                         "my node will sign this message"

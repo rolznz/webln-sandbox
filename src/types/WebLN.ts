@@ -1,4 +1,4 @@
-import { RequestMethod, WebLNProvider } from "@webbtc/webln-types";
+import { WebLNProvider } from "@webbtc/webln-types";
 
 export type ListInvoicesResponse = {
   invoices: {
