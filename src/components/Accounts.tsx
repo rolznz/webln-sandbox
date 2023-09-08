@@ -32,6 +32,9 @@ export function Accounts() {
     (async () => {
       setLoading(true);
       await loadAccountInfo();
+      await window.webln?.on?.("accountChanged", () => {
+        loadAccountInfo();
+      });
       setLoading(false);
     })();
   }, []);
@@ -82,16 +85,17 @@ export async function loadAccountInfo() {
     console.log("Loading webln...");
     await window.webln.enable();
     const info: GetInfoResponse = await window.webln.getInfo();
-    if (
-      !useAccountsStore
-        .getState()
-        .accounts.some(
-          (account) => account.info.node.pubkey === info.node.pubkey
-        )
-    ) {
+    const existingAccount = useAccountsStore
+      .getState()
+      .accounts.find(
+        (account) => account.info.node.pubkey === info.node.pubkey
+      );
+    if (!existingAccount) {
       useAccountsStore.getState().addAccount({
         info,
       });
+    } else {
+      useAccountsStore.getState().setSelectedAccount(existingAccount);
     }
 
     console.log("Webln loaded!");
