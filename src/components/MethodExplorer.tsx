@@ -1,7 +1,7 @@
-import { GetInfoResponse, RequestMethod } from "@webbtc/webln-types";
+import { GetInfoResponse, WebLNRequestMethod } from "@webbtc/webln-types";
 import classNames from "classnames";
 import React from "react";
-import { DefaultValues, Path, useForm, UseFormRegister } from "react-hook-form";
+import { Path, useForm, UseFormRegister } from "react-hook-form";
 import { loadAccountInfo } from "./Accounts";
 import { Loading } from "./Loading";
 
@@ -22,7 +22,7 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
     undefined
   );
   const [currentMethod, setCurrentMethod] = React.useState<
-    RequestMethod | undefined
+    WebLNRequestMethod | undefined
   >(undefined);
   const [modalResolve, setModalResolve] = React.useState<
     ((value: unknown) => void) | undefined
@@ -57,77 +57,90 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
               isLoading ? " btn-disabled" : undefined
             }`}
           >
-            {nodeInfo.methods.map((method) => (
-              <button
-                key={method}
-                className={`btn btn-info font-mono ${
-                  method === currentMethod ? "btn-active" : undefined
-                }`}
-                disabled={isLoading}
-                onClick={() => {
-                  (async () => {
-                    setCurrentMethod(method);
-                    setRequestError(undefined);
-                    setLoading(true);
-                    try {
-                      if (!window.webln) {
-                        throw new Error("WebLN is not available");
+            {nodeInfo.methods
+              .filter((method) => method.startsWith("request."))
+              .map((method) => (
+                <button
+                  key={method}
+                  className={`btn btn-info font-mono ${
+                    method === currentMethod ? "btn-active" : undefined
+                  }`}
+                  disabled={isLoading}
+                  onClick={() => {
+                    (async () => {
+                      if (!window.webln?.request) {
+                        alert("webln.request does not exist");
+                        return;
                       }
-                      async function getArgsFromModal() {
-                        let args = undefined;
-                        try {
-                          args = await new Promise((resolve, reject) => {
-                            setModalResolve(() => resolve);
-                            setCancelInputArguments(() => reject);
-                          });
-                        } catch (error) {
-                          console.error(error);
+                      setCurrentMethod(method);
+                      setRequestError(undefined);
+                      setLoading(true);
+                      try {
+                        if (!window.webln) {
+                          throw new Error("WebLN is not available");
                         }
-                        setModalOpen(false);
-                        return args;
-                      }
-                      const { args, cancelled } = await getArgs(
-                        method,
-                        setModalOpen,
-                        getArgsFromModal
-                      );
-                      if (!cancelled) {
-                        const executedCode = `await window.webln.enable();\nawait window.webln.request("${method}"${
-                          args ? ", " + JSON.stringify(args) : ""
-                        });`;
-                        setExecutedCode(executedCode);
-                        setRequestOutput(undefined);
-                        const result = await window.webln.request(method, args);
+                        async function getArgsFromModal() {
+                          let args = undefined;
+                          try {
+                            args = await new Promise((resolve, reject) => {
+                              setModalResolve(() => resolve);
+                              setCancelInputArguments(() => reject);
+                            });
+                          } catch (error) {
+                            console.error(error);
+                          }
+                          setModalOpen(false);
+                          return args;
+                        }
+                        const { args, cancelled } = await getArgs(
+                          method,
+                          setModalOpen,
+                          getArgsFromModal
+                        );
+                        if (!cancelled) {
+                          const methodWithoutPrefix = method.replace(
+                            "request.",
+                            ""
+                          );
+                          const executedCode = `await window.webln.enable();\nawait window.webln.request("${methodWithoutPrefix}"${
+                            args ? ", " + JSON.stringify(args) : ""
+                          });`;
+                          setExecutedCode(executedCode);
+                          setRequestOutput(undefined);
+                          const result = await window.webln.request(
+                            methodWithoutPrefix,
+                            args
+                          );
 
-                        console.log(method, result);
-                        setRequestOutput(result);
-                        loadAccountInfo();
-                      } else {
-                        throw new Error("Cancelled");
+                          console.log(method, result);
+                          setRequestOutput(result);
+                          loadAccountInfo();
+                        } else {
+                          throw new Error("Cancelled");
+                        }
+                      } catch (error) {
+                        console.error("Failed to request", method, error);
+                        setRequestError(error);
                       }
-                    } catch (error) {
-                      console.error("Failed to request", method, error);
-                      setRequestError(error);
-                    }
-                    setLoading(false);
-                  })();
-                }}
-              >
-                {method}
-                {!getDefaultArgs(method) && (
-                  <span className="text-error">!</span>
-                )}
-                {Object.keys(getDefaultArgs(method) || {}).length > 0 && (
-                  <span className="text-info-content">*</span>
-                )}
-                {currentMethod === method && isLoading && (
-                  <>
-                    &nbsp;
-                    <Loading />
-                  </>
-                )}
-              </button>
-            ))}
+                      setLoading(false);
+                    })();
+                  }}
+                >
+                  {method}
+                  {!getDefaultArgs(method) && (
+                    <span className="text-error">!</span>
+                  )}
+                  {Object.keys(getDefaultArgs(method) || {}).length > 0 && (
+                    <span className="text-info-content">*</span>
+                  )}
+                  {currentMethod === method && isLoading && (
+                    <>
+                      &nbsp;
+                      <Loading />
+                    </>
+                  )}
+                </button>
+              ))}
           </div>
         </div>
         <div className="flex flex-col gap-1 flex-1">
@@ -196,7 +209,7 @@ export function MethodExplorer({ nodeInfo }: MethodExplorerProps) {
 }
 
 async function getArgs(
-  method: RequestMethod,
+  method: WebLNRequestMethod,
   setModalOpen: (isOpen: boolean) => void,
   getArgsFromModal: () => Promise<unknown>
 ) {
@@ -235,27 +248,27 @@ function hexToBase64(hexstring: string) {
   );
 }
 
-function getDefaultArgs(method: RequestMethod) {
+function getDefaultArgs(method: WebLNRequestMethod) {
   return (() => {
     switch (method) {
-      case "getinfo":
-      case "getnetworkinfo":
-      case "channelbalance":
-      case "getnodeinfo":
-      case "listchannels":
-      case "walletbalance":
-      case "listpeers":
-      case "listinvoices":
-      case "gettransactions":
-      case "listpayments":
+      case "request.getinfo":
+      case "request.getnetworkinfo":
+      case "request.channelbalance":
+      case "request.getnodeinfo":
+      case "request.listchannels":
+      case "request.walletbalance":
+      case "request.listpeers":
+      case "request.listinvoices":
+      case "request.gettransactions":
+      case "request.listpayments":
         return {};
-      case "queryroutes":
+      case "request.queryroutes":
         return {
           amt: 500,
           pub_key:
             "03147d26d4c6cfa2add79543bb62d08b11e58e3f13939fbd1487ad620f117ba7e3",
         };
-      case "connectpeer":
+      case "request.connectpeer":
         return {
           addr: {
             pubkey:
@@ -265,12 +278,12 @@ function getDefaultArgs(method: RequestMethod) {
           perm: true,
           timeout: 10,
         };
-      case "disconnectpeer":
+      case "request.disconnectpeer":
         return {
           pub_key:
             "03f761d4db6fd17947694d795625310631b9af1df589f1e2f844b74c13caeecab4",
         };
-      case "openchannel":
+      case "request.openchannel":
         return {
           node_pubkey:
             "028194cc50c8824b4ca473a5b1296c440a82fb8837a3945b2f55a903d4c380f597",
@@ -283,7 +296,7 @@ function getDefaultArgs(method: RequestMethod) {
 
 type ArgumentsFormModalProps = {
   isModalOpen: boolean;
-  currentMethod: RequestMethod;
+  currentMethod: WebLNRequestMethod;
   modalResolve: ((args: unknown) => void) | undefined;
   cancelInputArguments: (() => void) | undefined;
 };
